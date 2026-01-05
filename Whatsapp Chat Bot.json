@@ -1,0 +1,420 @@
+{
+  "name": "Whatsapp Chat Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        -48
+      ],
+      "id": "8021a842-c5e2-4988-b9dd-b333785c3d35",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM",
+          "mode": "list",
+          "cachedResultName": "Chat bot database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Inventory",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        336
+      ],
+      "id": "c8722511-4fa6-4fae-9c01-4e85527d5ca7",
+      "name": "Inventory"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM",
+          "mode": "list",
+          "cachedResultName": "Chat bot database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1446267285,
+          "mode": "list",
+          "cachedResultName": "FAQ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM/edit#gid=1446267285"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -112,
+        336
+      ],
+      "id": "f0ca3554-7deb-4b33-b31c-5807fcb2957d",
+      "name": "FAQ"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        80
+      ],
+      "id": "212413cf-48a9-4c71-b41a-d24485cd3ac7",
+      "name": "WhatsApp Trigger",
+      "webhookId": "7a97c914-6149-483e-b822-ac53d4a8cb3b"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.messages[0].text.body }}",
+        "options": {
+          "systemMessage": "=You are a smart, friendly WhatsApp chatbot for **Medicine Centre**.  \nYour job is to assist customers with medicine orders, FAQs, and stock inquiries.  \nFollow all the rules below carefully.\n\n---\n\n### 🧾 Rules:\n\n1. **First Message Response**  \n   When a user sends their first message (like *hi*, *hello*, etc.), reply with:  \n\nWelcome to Medicine Centre\nHow can I help you today?\n\n🛒 Place an order\n\nℹ️ FAQ / Information\n\n📦 Check order / stock  \n\n👉 Keep the tone friendly and use emojis.\n\n2. **Language Matching**  \nAlways reply in the **same language** the user is using.  \n- Detect the language automatically from their message.  \n- Reply naturally in that same language.  \n- Example: if user says “apni kamon achen?”, reply “ami bhalo achi”.\n\n3. **Placing an Order**  \n- Ask step by step:  \n  1️⃣ Name and Phone number  \n  2️⃣ Medicine Name  \n  3️⃣ Quantity  \n- Check the *Inventory sheet* before confirming.  \n  - If available → reply:  \n    “Your order for *[item]* (x quantity) is confirmed ✅”  \n  - If not available → reply:  \n    “Sorry, *[item]* is out of stock ❌. Available options: [list items]”  \n- Only confirmed orders go into the *Orders sheet*.  \n- In the *Orders sheet*, always include:  \n  - **Status** = Confirmed / Rejected  \n  - **Description** = “Order accepted (item available)” OR “Order rejected (out of stock)”\n\n4. **FAQ / Information**  \n- Answer short and clear FAQs (delivery time, payment method, opening hours, etc.).  \n- If a question is not available in the FAQ sheet, reply politely:  \n  “I’m not sure, let me ask my team to get back to you with your question.”\n\n5. **Check Order / Check Stock**  \n- Ask for *Customer name* or *mobile number* \n- Look up in Google Sheets (Orders / Inventory).  \n  - If checking order → reply with status (Confirmed / Rejected / Cancelled / Delivered).  \n  - If checking stock → reply with available quantity.  \n  - If requested, list all available medicines with quantities.\n\n6. **Cancel Order**  \nIf user wants to cancel an order, reply politely:  \n  \"Sorry 🙏 I cannot cancel orders directly.  \n   Please call the Pharmacy owner first and inform them.  \n   Owner Contact: +91 6290058441\"  \n\n7. **Message Style**  \n- Keep replies short, like a normal WhatsApp chat.  \n- Use *stars* for highlighting words only.  \n- Avoid long paragraphs or bold formatting.  \n- Always keep tone friendly, polite, and human.  \n- Use emojis naturally in replies.\n\n---\n\nFollow these rules strictly for every message you send."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        80
+      ],
+      "id": "13438e20-1346-4ac4-8c4f-611003da2d7c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "811528608715587",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        336,
+        80
+      ],
+      "id": "c8199cbd-f119-445e-a5ef-48175c90b3f6",
+      "name": "Send message",
+      "webhookId": "8bc3279f-d1e8-4a90-b2bb-e724c0e5e463"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('WhatsApp Trigger').item.json.messages[0].from }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        -48
+      ],
+      "id": "ef8aa879-95cd-45b8-ade0-15880bff7b20",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "62984cd9-b4a2-4fa7-a6a9-e5d656640a95",
+              "leftValue": "={{ $json.messages[0].from }}",
+              "rightValue": "={{ $json.messages[0].text.body }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -368,
+        80
+      ],
+      "id": "9d399922-5f7c-4e98-b6ff-d62b57f0df76",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        304
+      ],
+      "id": "7014f915-5ea1-4e1d-a41c-80e8855b9ed7",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM",
+          "mode": "list",
+          "cachedResultName": "Chat bot database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1208059617,
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1FRuXkt7jGl_wA-7MhkQyHOUmsVKF9GysOhjFwz3pfaM/edit#gid=1208059617"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Customer_Name', ``, 'string') }}",
+            "Mobile No,": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Mobile_No_', ``, 'string') }}",
+            "Order": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Order', ``, 'string') }}",
+            "Quantity": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Quantity', ``, 'string') }}",
+            "Order status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Order_status', ``, 'string') }}",
+            "Order Date": "={{ $now.format('yyyy-MM-dd hh-mm-ss a') }}"
+          },
+          "matchingColumns": [
+            "Customer Name"
+          ],
+          "schema": [
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Mobile No,",
+              "displayName": "Mobile No,",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Order",
+              "displayName": "Order",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Quantity",
+              "displayName": "Quantity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Order Date",
+              "displayName": "Order Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Order status",
+              "displayName": "Order status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        48,
+        352
+      ],
+      "id": "64c0b9d7-3d2c-4c5f-af6f-8a03eba9b0df",
+      "name": "Orders"
+    },
+    {
+      "parameters": {
+        "content": "## Bu bot, müşterilerinizle WhatsApp üzerinden konuşur, sorularını (SSS) yanıtlar, stoktaki ürünleri kontrol eder ve siparişleri otomatik olarak kaydeder.\n\n1. Adım: Google Sheets Veri Tabanı Hazırlığı (En Önemli Kısım)\nVerilerin birbirine karışmaması için Google Sheets'te disiplinli bir yapı kurmalıyız. Tek bir Google E-Tablo dosyası açın ve içinde aşağıdaki isimlerde 3 ayrı sayfa (sekme) oluşturun.\n\nBotun kafasının karışmaması için sütun başlıklarını (Header) aynen aşağıdakiler gibi yapın:\n\nSayfa 1 Adı: FAQ (Bilgi Bankası)\n\nAmaç: Botun kargo süreleri, iade koşulları gibi genel soruları yanıtlaması için.\n\nSütun A: Soru (Örn: Kargo kaç günde gelir?)\n\nSütun B: Cevap (Örn: Siparişleriniz 24 saat içinde kargoya verilir.)\n\nSayfa 2 Adı: Inventory (Ürün ve Stok)\n\nAmaç: Botun müşteriye fiyat ve stok bilgisi verebilmesi için.\n\nSütun A: Urun_Adi (Örn: Kırmızı T-Shirt)\n\nSütun B: Fiyat (Örn: 250 TL)\n\nSütun C: Stok_Adedi (Örn: 50)\n\nSütun D: Aciklama (Örn: %100 Pamuk, Slim Fit)\n\nSayfa 3 Adı: Orders (Sipariş Kayıtları)\n\nAmaç: Botun aldığı siparişleri sizin görmeniz için yazacağı yer. Bu sayfa başlangıçta boş olsun.\n\nSütun A: Musteri_Telefon\n\nSütun B: Siparis_Detayi\n\nSütun C: Toplam_Tutar\n\nSütun D: Tarih\n\n2. Adım: n8n İş Akışı Kurulumu\nGörseldeki yapıyı kurarken şu mantığı izleyin:\n\nWhatsApp Trigger: Meta (Facebook) developer hesabınızdan aldığınız API bilgilerini girin. Bu node, gelen her mesajı tetikler.\n\nAI Agent (Beyin): İş akışının kalbi burasıdır.\n\nModel: OpenAI Chat Model bağlayın (GPT-4o veya GPT-4-turbo önerilir, daha zekidir).\n\nMemory: Simple Memory modülünü ekleyin ki bot, konuşmanın geçmişini hatırlasın (Örn: Müşteri \"Fiyatı ne?\" dediğinde hangi üründen bahsettiğini unutmasın).\n\nTools (Botun Yetenekleri):\n\nFAQ Tool (Read Sheet): Google Sheets node'unu bağlayın. İşlem olarak \"Get Many Rows\" seçin ve FAQ sayfasını gösterin. Açıklama kısmına \"Genel sorular ve şirket politikaları için bunu kullan\" yazın.\n\nInventory Tool (Read Sheet): İkinci bir Google Sheets node'u bağlayın. Inventory sayfasını seçin. Açıklamaya \"Ürün fiyatlarını ve stok durumunu kontrol etmek için bunu kullan\" yazın.\n Bu prompt zamanla test ederek geliştirmen gerekiyor.\n\nOrders Tool (Append Sheet): Üçüncü Google Sheets node'u. İşlem olarak \"Append (Ekle)\" seçin. Orders sayfasını bağlayın. Açıklamaya \"Müşteri sipariş vermeyi onayladığında siparişi kaydetmek için bunu kullan\" yazın.\n\n3. Adım: İnce Ayarlar ve İpuçları\nSystem Prompt (Botun Kimliği): AI Agent ayarlarında \"System Message\" kısmına şunu yazın:\n\n\"Sen yardımsever bir e-ticaret asistanısın. Sadece sana verilen 'Inventory' listesindeki ürünleri satabilirsin. Stokta olmayan ürünü satma. Genel sorularda 'FAQ' listesini kullan. Müşteri siparişi onaylamadan 'Orders' listesine ekleme yapma. Nazik ve kısa cevaplar ver.\"",
+        "height": 1216,
+        "width": 1840
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -912,
+        496
+      ],
+      "id": "cbad232f-cfb6-4f7c-a479-99e55cd14891",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Inventory": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orders": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "553e9f4e-2b2a-4fa4-b53b-5e55ad70b189",
+  "meta": {
+    "instanceId": "29cf455c1f4401bb6e90a47cb335da8b6f03b4795ff9ef38ff165bb1c9efa083"
+  },
+  "id": "BSMoQONrR5wayLoc",
+  "tags": []
+}
